@@ -1,37 +1,49 @@
-!pip install streamlit pyngrok openpyxl
-
-from pyngrok import ngrok
-
-# Start ngrok tunnel
-public_url = ngrok.connect(8501)
-print("Public URL:", public_url)
-
-# Write streamlit app
-with open("app.py", "w") as f:
-    f.write('''
 import streamlit as st
 import pandas as pd
-from io import BytesIO
+from PIL import Image
+import pytesseract
+from pdf2image import convert_from_path
+import io
 
-st.title("Invoice to Excel")
+# ߎ App Title
+st.title("ߓ Invoice Text Extractor")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload Invoice", type=["pdf", "jpg", "png"])
+# File uploader (PDF or Image)
+uploaded_file = st.file_uploader(
+    "Upload Invoice (PDF or Image)", 
+    type=["pdf", "png", "jpg", "jpeg"]
+)
 
 if uploaded_file:
-    st.success("File uploaded successfully!")
+    st.success("✅ File uploaded successfully!")
 
-    if st.button("Send"):
-        # Fake processing -> create dummy Excel
-        data = {"Field": ["Invoice No", "Amount"], "Value": ["1234", "₹5000"]}
-        df = pd.DataFrame(data)
+    text = ""
 
-        output = BytesIO()
-        df.to_excel(output, index=False, engine="openpyxl")
-        st.success("Processing complete!")
+    # If PDF → convert to image first
+    if uploaded_file.type == "application/pdf":
+        pdf_bytes = uploaded_file.read()
+        images = convert_from_path(io.BytesIO(pdf_bytes))
+        for img in images:
+            text += pytesseract.image_to_string(img)
+    else:
+        # Image file
+        image = Image.open(uploaded_file)
+        text = pytesseract.image_to_string(image)
 
-        st.download_button("Download Excel", output.getvalue(), "invoice.xlsx")
-''')
+    # Show extracted text
+    st.subheader("ߓ Extracted Text:")
+    st.text_area("Text", text, height=200)
 
-# Run app
-!streamlit run app.py --server.port 8501 --server.headless true
+    # Convert text → Excel
+    if text.strip():
+        df = pd.DataFrame({"Extracted Text": [text]})
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Invoice")
+
+        st.download_button(
+            label="⬇️ Download Excel",
+            data=excel_buffer.getvalue(),
+            file_name="invoice_output.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
