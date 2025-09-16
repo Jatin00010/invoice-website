@@ -5,45 +5,67 @@ import pytesseract
 from pdf2image import convert_from_path
 import io
 
-# ߎ App Title
-st.title("ߓ Invoice Text Extractor")
+# Inject custom CSS
+page_bg = """
+<style>
+.container {
+  background: #181c21;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
 
-# File uploader (PDF or Image)
-uploaded_file = st.file_uploader(
-    "Upload Invoice (PDF or Image)", 
-    type=["pdf", "png", "jpg", "jpeg"]
-)
+.pattern-bg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    135deg,
+    #232526 0px,
+    #232526 60px,
+    #23252699 70px,
+    #414345 130px
+  );
+}
+
+.cube-svg {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  left: -30%;
+  top: -20%;
+  background: transparent;
+  opacity: 0.7;
+  z-index: 1;
+  animation: cubeMove 18s linear infinite alternate;
+}
+
+@keyframes cubeMove {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(-20%) scale(1.02) rotate(1deg);
+  }
+}
+</style>
+
+<div class="container">
+  <div class="pattern-bg"></div>
+</div>
+"""
+
+st.markdown(page_bg, unsafe_allow_html=True)
+
+# ---- App content ----
+st.title("ߓ Invoice Uploader")
+st.write("Upload your invoice and download extracted text as Excel")
+
+uploaded_file = st.file_uploader("Upload Invoice (PDF or Image)", type=["pdf", "png", "jpg", "jpeg"])
 
 if uploaded_file:
     st.success("✅ File uploaded successfully!")
-
-    text = ""
-
-    # If PDF → convert to image first
-    if uploaded_file.type == "application/pdf":
-        pdf_bytes = uploaded_file.read()
-        images = convert_from_path(io.BytesIO(pdf_bytes))
-        for img in images:
-            text += pytesseract.image_to_string(img)
-    else:
-        # Image file
-        image = Image.open(uploaded_file)
-        text = pytesseract.image_to_string(image)
-
-    # Show extracted text
-    st.subheader("ߓ Extracted Text:")
-    st.text_area("Text", text, height=200)
-
-    # Convert text → Excel
-    if text.strip():
-        df = pd.DataFrame({"Extracted Text": [text]})
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Invoice")
-
-        st.download_button(
-            label="⬇️ Download Excel",
-            data=excel_buffer.getvalue(),
-            file_name="invoice_output.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    st.write("ߑ Next step: run AI/processing here")
