@@ -1,7 +1,18 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
+# Page config
 st.set_page_config(page_title="DocStream", layout="wide")
+
+# ߔ Hide Streamlit default UI (menu, footer, header)
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # --- Full HTML, CSS, JS Code ---
 html_code = """
